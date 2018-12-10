@@ -39,6 +39,7 @@
             >
 
             <TextView
+                android:id="@+id/writeTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="10분 전"
@@ -47,6 +48,7 @@
                 />
 
             <RatingBar
+                android:id="@+id/listRatingBar"
                 style="?android:attr/ratingBarStyleSmall"
                 android:layout_width="wrap_content"
                 android:layout_height="15dp"

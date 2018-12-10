@@ -1,6 +1,8 @@
 package kr.co.supp0rtyoo.movieapplication;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -102,25 +104,47 @@ public class MainActivity extends AppCompatActivity {
         evaluateTxt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(getApplicationContext(), "한줄평 작성 버튼이 눌렸습니다.", Toast.LENGTH_LONG).show();
+                Intent intent = new Intent(getApplicationContext(), writeComment.class);
+                startActivityForResult(intent, 101);
+
+                //Toast.makeText(getApplicationContext(), "한줄평 작성 버튼이 눌렸습니다.", Toast.LENGTH_LONG).show();
             }
         });
 
         allEvaluateTxt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(getApplicationContext(), "한줄평 모두 보기 버튼이 눌렸습니다.", Toast.LENGTH_LONG).show();
+                Intent intent = new Intent(getApplicationContext(), seeAllComment.class);
+                startActivity(intent);
+
+                //Toast.makeText(getApplicationContext(), "한줄평 모두 보기 버튼이 눌렸습니다.", Toast.LENGTH_LONG).show();
             }
         });
 
         ListView evalListView = (ListView)findViewById(R.id.evaluateListview);
         EvaluateAdapter adapter = new EvaluateAdapter();
 
-        adapter.addItem(new evaluateItems("kym71**", "적당히 재밌다. 오랜만에 잠 안오는 영화 봤네요."));
-        adapter.addItem(new evaluateItems("kym71**", "적당히 재밌다. 오랜만에 잠 안오는 영화 봤네요."));
+        adapter.addItem(new evaluateItems("kym71**", "적당히 재밌다. 오랜만에 잠 안오는 영화 봤네요.", 5.0f, 10));
+        adapter.addItem(new evaluateItems("kym71**", "적당히 재밌다. 오랜만에 잠 안오는 영화 봤네요.", 4.8f, 10));
 
         evalListView.setAdapter(adapter);
 
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if(requestCode == 101) {
+            if(data != null) {
+                String comment = data.getExtras().getString("comment");
+                float rating = data.getExtras().getFloat("rating");
+
+                Toast.makeText(this, "작성하기 화면에서 돌아왔습니다.\n" + "저장여부: " + comment + ", " + rating, Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(this, "작성하기가 취소되었습니다.", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     class EvaluateAdapter extends BaseAdapter {
@@ -153,6 +177,8 @@ public class MainActivity extends AppCompatActivity {
             evaluateItems item = items.get(i);
             evalListView.setName(item.getWriterID());
             evalListView.setComments(item.getContents());
+            evalListView.setRatingBar(item.getRating());
+            evalListView.setTime(item.getWriteTime());
 
             return evalListView;
         }
