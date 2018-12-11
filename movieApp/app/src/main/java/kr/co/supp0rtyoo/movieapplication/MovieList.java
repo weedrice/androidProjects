@@ -13,27 +13,45 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.MenuItem;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+import com.google.gson.Gson;
+
 import java.util.ArrayList;
+
+import kr.co.supp0rtyoo.movieapplication.commentData.CommentList;
+import kr.co.supp0rtyoo.movieapplication.movieData.MovieDetail;
+import kr.co.supp0rtyoo.movieapplication.movieData.MovieDetailInfo;
+import kr.co.supp0rtyoo.movieapplication.movieData.MovieListDetail;
+import kr.co.supp0rtyoo.movieapplication.movieData.MovieListInfo;
 
 public class MovieList extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
     ViewPager pager;
     MovieDetailFragment detailFragment;
 
+    MovieListPagerAdapter adapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_movie_list);
 
+        if(AppHelper.requestQueue == null) {
+            AppHelper.requestQueue = Volley.newRequestQueue(getApplicationContext());
+        }
+
         pager = (ViewPager)findViewById(R.id.pager);
-        pager.setOffscreenPageLimit(6);
-
-        MovieListPagerAdapter adapter = new MovieListPagerAdapter(getSupportFragmentManager());
-
-        setPager(adapter);
+        adapter = new MovieListPagerAdapter(getSupportFragmentManager());
+        loadMovieListDataFromAPI();
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -48,63 +66,65 @@ public class MovieList extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
     }
 
-    private void setPager(MovieListPagerAdapter adapter) {
-        MovieListFragment fragment = new MovieListFragment();
-        Bundle bundle = new Bundle(2);
-        bundle.putString("title", "군도");
-        bundle.putInt("image", R.drawable.image1);
-        fragment.setArguments(bundle);
+    private void loadMovieListDataFromAPI() {
+        String url = AppHelper.getUrl();
+        int port = AppHelper.getPort();
+        String apiUrl = "/movie/readMovieList";
+        int requestCode = 1;
+        String requestURL = "http://" + url + ":" + port + apiUrl + "?type=" + requestCode;
 
-        MovieListFragment fragment2 = new MovieListFragment();
-        Bundle bundle2 = new Bundle(2);
-        bundle2.putString("title", "공조");
-        bundle2.putInt("image", R.drawable.image2);
-        fragment2.setArguments(bundle2);
+        StringRequest request = new StringRequest(
+                Request.Method.GET,
+                requestURL,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        processMovieListResponse(response);
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                        Log.d("Error: ", String.valueOf(error));
+                    }
+                }
+        );
 
-        MovieListFragment fragment3 = new MovieListFragment();
-        Bundle bundle3 = new Bundle(2);
-        bundle3.putString("title", "더킹");
-        bundle3.putInt("image", R.drawable.image3);
-        fragment3.setArguments(bundle3);
+        request.setShouldCache(false);
+        AppHelper.requestQueue.add(request);
+    }
 
-        MovieListFragment fragment4 = new MovieListFragment();
-        Bundle bundle4 = new Bundle(2);
-        bundle4.putString("title", "레지던트 이블");
-        bundle4.putInt("image", R.drawable.image4);
-        fragment4.setArguments(bundle4);
+    private void processMovieListResponse(String response) {
+        Gson gson = new Gson();
+        MovieListInfo movieList = gson.fromJson(response, MovieListInfo.class);
 
-        MovieListFragment fragment5 = new MovieListFragment();
-        Bundle bundle5 = new Bundle(2);
-        bundle5.putString("title", "럭키");
-        bundle5.putInt("image", R.drawable.image5);
-        fragment5.setArguments(bundle5);
+        setPager(adapter, movieList);
+    }
 
-        MovieListFragment fragment6 = new MovieListFragment();
-        Bundle bundle6 = new Bundle(2);
-        bundle6.putString("title", "아수라");
-        bundle6.putInt("image", R.drawable.image6);
-        fragment6.setArguments(bundle6);
+    private void setPager(MovieListPagerAdapter adapter, MovieListInfo movieListObj) {
+        ArrayList<MovieListFragment> fragments = new ArrayList<MovieListFragment>();
+        pager.setOffscreenPageLimit(movieListObj.getResult().size());
 
-        adapter.addItem(fragment);
-        adapter.addItem(fragment2);
-        adapter.addItem(fragment3);
-        adapter.addItem(fragment4);
-        adapter.addItem(fragment5);
-        adapter.addItem(fragment6);
+        for(int i=0;i<movieListObj.getResult().size();i++) {
+            MovieListDetail movieListDetail = movieListObj.getResult().get(i);
+            MovieListFragment fragment = new MovieListFragment();
+            Bundle bundle = new Bundle(5);
+            bundle.putInt("id", movieListDetail.getId());
+            bundle.putString("title", movieListDetail.getTitle());
+            bundle.putInt("grade", movieListDetail.getGrade());
+            bundle.putString("image", movieListDetail.getImage());
+            bundle.putFloat("reservation", movieListDetail.getReservation_rate());
+            fragment.setArguments(bundle);
+            fragments.add(fragment);
+        }
+
+        for(int i=0;i<fragments.size();i++) {
+            adapter.addItem(fragments.get(i));
+        }
 
         pager.setAdapter(adapter);
     }
-
-    /*
-    private void setMovieData(MovieListFragment fragment) {
-        Bundle bundle = new Bundle(5);
-        bundle.putString("title", "군도");
-        bundle.putInt("index", 0);
-        bundle.putString("reservation", "61.6%");
-        bundle.putInt("limit", 15);
-        bundle.putInt("day", 1);
-        fragment.setArguments(bundle);
-    } */
 
     @Override
     public void onBackPressed() {
@@ -123,7 +143,7 @@ public class MovieList extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_movieList) {
-            getSupportFragmentManager().beginTransaction().hide(detailFragment).commit();
+            getSupportFragmentManager().beginTransaction().remove(detailFragment).commit();
         } else if (id == R.id.nav_movieAPI) {
 
         } else if (id == R.id.nav_reservation) {
@@ -159,25 +179,88 @@ public class MovieList extends AppCompatActivity
         }
     }
 
-    public void showMovieDetailActivity(int image, String title) {
-        detailFragment = new MovieDetailFragment();
-        Bundle bundle = new Bundle();
-        bundle.putInt("image", image);
-        bundle.putString("title", title);
-        detailFragment.setArguments(bundle);
+    public void showMovieDetailActivity(int id) {
+        if(detailFragment == null)
+            detailFragment = new MovieDetailFragment();
+        else {
+            getSupportFragmentManager().beginTransaction().show(detailFragment).commit();
+        }
 
+        getMovieDetailFromAPI(id);
+    }
+
+    public void getMovieDetailFromAPI(int id) {
+        String url = AppHelper.getUrl();
+        int port = AppHelper.getPort();
+        String apiUrl = "/movie/readMovie";
+        int requestCode = id;
+        String requestURL = "http://" + url + ":" + port + apiUrl + "?id=" + requestCode;
+
+        StringRequest request = new StringRequest(
+                Request.Method.GET,
+                requestURL,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        processMovieDetailResponse(response);
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                        Log.d("Error: ", String.valueOf(error));
+                    }
+                }
+        );
+
+        request.setShouldCache(false);
+        AppHelper.requestQueue.add(request);
+    }
+
+    private void processMovieDetailResponse(String response) {
+        Gson gson = new Gson();
+        MovieDetail movieDetail = gson.fromJson(response, MovieDetail.class);
+
+        setDetailBundle(movieDetail);
+    }
+
+    private void setDetailBundle(MovieDetail movieDetail) {
+        MovieDetailInfo movieDetailInfo = movieDetail.getResult().get(0);
+        Bundle bundle = new Bundle(17);
+        bundle.putInt("id", movieDetailInfo.getId());
+        bundle.putString("title", movieDetailInfo.getTitle());
+        bundle.putString("date", movieDetailInfo.getDate());
+        bundle.putFloat("user_rating", movieDetailInfo.getUser_rating());
+        bundle.putFloat("audience_rating", movieDetailInfo.getAudience_rating());
+        bundle.putFloat("reservation_rate", movieDetailInfo.getReservation_rate());
+        bundle.putInt("reservation_grade", movieDetailInfo.getReservation_grade());
+        bundle.putInt("grade", movieDetailInfo.getGrade());
+        bundle.putString("thumb", movieDetailInfo.getThumb());
+        bundle.putString("genre", movieDetailInfo.getGenre());
+        bundle.putInt("duration", movieDetailInfo.getDuration());
+        bundle.putInt("audience", movieDetailInfo.getAudience());
+        bundle.putString("synopsis", movieDetailInfo.getSynopsis());
+        bundle.putString("director", movieDetailInfo.getDirector());
+        bundle.putString("actor", movieDetailInfo.getActor());
+        bundle.putInt("like", movieDetailInfo.getLike());
+        bundle.putInt("dislike", movieDetailInfo.getDislike());
+
+        detailFragment.setArguments(bundle);
         getSupportFragmentManager().beginTransaction().replace(R.id.container, detailFragment).commit();
     }
 
-    public void showWriteComment() {
+    public void showWriteComment(int movieID) {
         Intent intent = new Intent(getApplicationContext(), writeComment.class);
-        startActivityForResult(intent, 101);
+        intent.putExtra("id", movieID);
+        startActivity(intent);
 
         //Toast.makeText(getApplicationContext(), "한줄평 작성 버튼이 눌렸습니다.", Toast.LENGTH_LONG).show();
     }
 
-    public void showAllComment() {
+    public void showAllComment(int movieID) {
         Intent intent = new Intent(getApplicationContext(), seeAllComment.class);
+        intent.putExtra("id", movieID);
         startActivity(intent);
 
         //Toast.makeText(getApplicationContext(), "한줄평 모두 보기 버튼이 눌렸습니다.", Toast.LENGTH_LONG).show();
@@ -200,5 +283,50 @@ public class MovieList extends AppCompatActivity
         }
     }
 
+    public void setMovieListImage(String url, ImageView imageView) {
+        ImageLoadTask task = new ImageLoadTask(url, imageView);
+        task.execute();
+    }
 
+    public void setMovieDetailImage(String url, ImageView imageView) {
+        ImageLoadTask task = new ImageLoadTask(url, imageView);
+        task.execute();
+    }
+
+    public void getCommentsFromAPI(int id) {
+        String url = AppHelper.getUrl();
+        int port = AppHelper.getPort();
+        String apiUrl = "/movie/readCommentList";
+        int movieID = id;
+        int limit = 2;
+        String requestURL = "http://" + url + ":" + port + apiUrl + "?id=" + movieID + "&limit=" + limit;
+
+        StringRequest request = new StringRequest(
+                Request.Method.GET,
+                requestURL,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        processCommentsResponse(response);
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                        Log.d("Error: ", String.valueOf(error));
+                    }
+                }
+        );
+
+        request.setShouldCache(false);
+        AppHelper.requestQueue.add(request);
+    }
+
+    private void processCommentsResponse(String response) {
+        Gson gson = new Gson();
+        CommentList commentList = gson.fromJson(response, CommentList.class);
+
+        detailFragment.setListView(commentList);
+    }
 }

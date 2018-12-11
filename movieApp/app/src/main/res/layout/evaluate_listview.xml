@@ -5,9 +5,12 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation = "horizontal"
+    android:layout_marginTop="5dp"
+    android:layout_marginBottom="5dp"
     >
 
     <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/userProfile"
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_margin="10dp"
@@ -25,7 +28,7 @@
             android:id="@+id/writer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="kym71**"
+            android:text="user ID"
             android:textStyle="bold"
             android:textSize="8dp"
             android:textColor="#000000"
@@ -42,19 +45,19 @@
                 android:id="@+id/writeTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="10분 전"
+                android:text="작성시간"
                 android:textSize="10dp"
                 android:textColor="#808080"
                 />
 
             <RatingBar
-                android:id="@+id/listRatingBar"
+                android:id="@+id/commentListRatingBar"
                 style="?android:attr/ratingBarStyleSmall"
                 android:layout_width="wrap_content"
                 android:layout_height="15dp"
                 android:layout_marginLeft="15dp"
                 android:baselineAligned="true"
-                android:isIndicator="false"
+                android:isIndicator="true"
                 android:numStars="5"
                 android:rating="4.5"
                 android:progressTint="@android:color/holo_blue_light"
@@ -66,7 +69,7 @@
             android:id="@+id/comments"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="적당히 재밌다. 오랜만에 잠 안오는 영화 봤네요."
+            android:text="댓글내용"
             android:textSize="12dp"
             android:textColor="#000000"
             android:layout_marginTop="10dp"
@@ -81,7 +84,16 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="추천     0"
+                android:text="추천     "
+                android:textSize="10dp"
+                android:textColor="#000000"
+                />
+
+            <TextView
+                android:id="@+id/commentRecommended"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
                 android:textSize="10dp"
                 android:textColor="#000000"
                 />

@@ -15,16 +15,17 @@
         >
 
         <TextView
+            android:id="@+id/allCommentsMovieTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="군도"
+            android:text="영화제목"
             android:textSize="30dp"
             android:textColor="#808080"
             android:textStyle="bold"
             />
 
         <ImageView
-            android:id="@+id/writeComment"
+            android:id="@+id/allCommentsGrade"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:layout_gravity="center"
@@ -47,28 +48,30 @@
         >
 
         <RatingBar
+            android:id="@+id/allCommentsRatingBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginRight="5dp"
             android:numStars="5"
-            android:rating="8.2"
             android:isIndicator="true"
             style="?android:attr/ratingBarStyleSmall"
             />
 
         <TextView
+            android:id="@+id/allCommentsRating"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="8.2"
+            android:text="별점"
             android:textSize="15dp"
             android:textColor="#808080"
             android:layout_marginRight="5dp"
             />
 
         <TextView
+            android:id="@+id/allCommentsParticipants"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="(1,142명 참여)"
+            android:text="참여자수"
             android:textSize="15dp"
             android:textColor="#808080"
             />
@@ -84,8 +87,8 @@
         android:layout_width="match_parent"
         android:layout_height="80dp"
         android:orientation="horizontal"
-        android:gravity="left"
-        android:weightSum="10"
+        android:weightSum="9"
+        android:layout_gravity="center_vertical|center_horizontal"
         >
 
         <TextView
@@ -94,31 +97,41 @@
             android:text="한줄평"
             android:textSize="17dp"
             android:textStyle="bold"
-            android:layout_marginLeft="20dp"
-            android:layout_marginTop="30dp"
             android:layout_weight="8"
+            android:layout_marginLeft="20dp"
+            android:layout_gravity="center_horizontal|center_vertical"
             android:textColor="#000000"
             />
 
-        <ImageView
-            android:layout_width="20dp"
-            android:layout_height="25dp"
-            android:src="@drawable/ic_review_selected"
-            android:layout_marginTop="30dp"
-            android:layout_weight="1"
-            />
-
-        <TextView
-            android:id="@+id/writeCommentInTotalList"
+        <LinearLayout
+            android:id="@+id/allCommentsWriteComment"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="작성하기"
-            android:textSize="17dp"
-            android:layout_marginTop="30dp"
-            android:textStyle="bold"
-            android:layout_weight="1"
-            android:textColor="#FF730D"
-            />
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:layout_weight="2"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginLeft="30dp"
+            >
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="25dp"
+                android:src="@drawable/ic_review_selected"
+                android:layout_gravity="center_vertical"
+                />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginLeft="5dp"
+                android:text="작성하기"
+                android:textColor="#FF730D"
+                android:textSize="17dp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
 
     </LinearLayout>
 

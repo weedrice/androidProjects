@@ -4,24 +4,34 @@ public class evaluateItems {
     private String writerID;
     private String contents;
     private float rating;
-    private int writeTime;
+    private String writeTime;
+    private int recommend;
 
-    public evaluateItems(String writerID, String contents, float rating, int writeTime) {
+    public int getRecommend() {
+        return recommend;
+    }
+
+    public void setRecommend(int recommend) {
+        this.recommend = recommend;
+    }
+
+    public evaluateItems(String writerID, String contents, float rating, String writeTime, int recommend) {
         this.writerID = writerID;
         this.contents = contents;
         this.rating = rating;
         this.writeTime = writeTime;
+        this.recommend = recommend;
     }
 
     public String getWriterID() {
         return writerID;
     }
 
-    public int getWriteTime() {
+    public String getWriteTime() {
         return writeTime;
     }
 
-    public void setWriteTime(int writeTime) {
+    public void setWriteTime(String writeTime) {
         this.writeTime = writeTime;
     }
 
@@ -31,16 +41,6 @@ public class evaluateItems {
 
     public void setContents(String contents) {
         this.contents = contents;
-    }
-
-    @Override
-    public String toString() {
-        return "evaluateItems{" +
-                "writerID='" + writerID + '\'' +
-                ", contents='" + contents + '\'' +
-                ", rating=" + rating +
-                ", writeTime='" + writeTime + '\'' +
-                '}';
     }
 
     public void setRating(float rating) {

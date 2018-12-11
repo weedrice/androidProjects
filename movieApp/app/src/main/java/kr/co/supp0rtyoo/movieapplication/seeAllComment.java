@@ -3,30 +3,62 @@ package kr.co.supp0rtyoo.movieapplication;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RatingBar;
 import android.widget.TextView;
+
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.google.gson.Gson;
 
 import java.util.ArrayList;
 
-public class seeAllComment extends AppCompatActivity {
+import kr.co.supp0rtyoo.movieapplication.commentData.CommentList;
+import kr.co.supp0rtyoo.movieapplication.commentData.CommentListInfo;
+import kr.co.supp0rtyoo.movieapplication.movieData.MovieDetail;
+import kr.co.supp0rtyoo.movieapplication.movieData.MovieDetailInfo;
 
-    TextView writeComment;
+public class seeAllComment extends AppCompatActivity {
+    TextView movieTitle;
+    ImageView grade;
+    RatingBar ratingBar;
+    TextView rating;
+    TextView participants;
+    LinearLayout writeComment;
+    int movieID;
+
+    ListView allCommentListView;
+    AllCommentAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_see_all_comment);
 
-        ListView allCommentListView = (ListView)findViewById(R.id.seeAllCommentsListview);
-        seeAllComment.AllCommentAdapter adapter = new seeAllComment.AllCommentAdapter();
+        Intent intent = getIntent();
+        movieID = intent.getExtras().getInt("id");
+        movieTitle = (TextView)findViewById(R.id.allCommentsMovieTitle);
+        grade = (ImageView)findViewById(R.id.allCommentsGrade);
+        ratingBar = (RatingBar)findViewById(R.id.allCommentsRatingBar);
+        rating = (TextView)findViewById(R.id.allCommentsRating);
+        participants = (TextView)findViewById(R.id.allCommentsParticipants);
 
-        setComments(adapter);
-        allCommentListView.setAdapter(adapter);
+        getMovieInfoFromAPI();
 
-        writeComment = (TextView)findViewById(R.id.writeCommentInTotalList);
+        allCommentListView = (ListView)findViewById(R.id.seeAllCommentsListview);
+        adapter = new AllCommentAdapter();
+
+        setComments();
+
+        writeComment = (LinearLayout) findViewById(R.id.allCommentsWriteComment);
 
         writeComment.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -39,24 +71,106 @@ public class seeAllComment extends AppCompatActivity {
         });
     }
 
-    private void setComments(seeAllComment.AllCommentAdapter adapter) {
-        adapter.addItem(new evaluateItems("kym71**", "적당히 재밌다. 오랜만에 잠 안오는 영화 봤네요.", 5.0f, 10));
-        adapter.addItem(new evaluateItems("angel**", "웃긴 내용보다는 좀 더 진지한 영화.", 4.8f, 15));
-        adapter.addItem(new evaluateItems("beaut**", "연기가 부족한 느낌이 드는 배우도 있다. 그래도 전체적으로는 재밌다.", 4.5f, 16));
-        adapter.addItem(new evaluateItems("sales**", "적당히 재밌다. 오랜만에 잠 안오는 영화 봤네요.", 5.0f, 18));
-        adapter.addItem(new evaluateItems("supp0**", "하정우의 연기력은 명불허전!.", 4.2f, 20));
-        adapter.addItem(new evaluateItems("rimel**", "약간 잔인할 수 있어요.", 4.5f, 22));
-        adapter.addItem(new evaluateItems("uz48**", "조선시대 백성들의 아픔을 고스란히 전달하는 영화.", 4.3f, 25));
-        adapter.addItem(new evaluateItems("saint**", "더이상 쓸말이 없을것 같아요.", 4.2f, 28));
-        adapter.addItem(new evaluateItems("ghkrw**", "안드로이드 부스트코스 화이팅!", 4.9f, 32));
-        adapter.addItem(new evaluateItems("xoxo2**", "뛰어난 개발자로 성장합시다!", 4.5f, 34));
-        adapter.addItem(new evaluateItems("kym71**", "적당히 재밌다. 오랜만에 잠 안오는 영화 봤네요.", 5.0f, 10));
-        adapter.addItem(new evaluateItems("angel**", "웃긴 내용보다는 좀 더 진지한 영화.", 4.8f, 15));
-        adapter.addItem(new evaluateItems("beaut**", "연기가 부족한 느낌이 드는 배우도 있다. 그래도 전체적으로는 재밌다.", 4.5f, 16));
-        adapter.addItem(new evaluateItems("sales**", "적당히 재밌다. 오랜만에 잠 안오는 영화 봤네요.", 5.0f, 18));
-        adapter.addItem(new evaluateItems("supp0**", "하정우의 연기력은 명불허전!.", 4.2f, 20));
-        adapter.addItem(new evaluateItems("rimel**", "약간 잔인할 수 있어요.", 4.5f, 22));
-        adapter.addItem(new evaluateItems("uz48**", "조선시대 백성들의 아픔을 고스란히 전달하는 영화.", 4.3f, 25));
+    public void getMovieInfoFromAPI() {
+        String url = AppHelper.getUrl();
+        int port = AppHelper.getPort();
+        String apiUrl = "/movie/readMovie";
+        int requestCode = movieID;
+        String requestURL = "http://" + url + ":" + port + apiUrl + "?id=" + requestCode;
+
+        StringRequest request = new StringRequest(
+                Request.Method.GET,
+                requestURL,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        processMovieDetailResponse(response);
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                        Log.d("Error: ", String.valueOf(error));
+                    }
+                }
+        );
+
+        request.setShouldCache(false);
+        AppHelper.requestQueue.add(request);
+    }
+
+    private void processMovieDetailResponse(String response) {
+        Gson gson = new Gson();
+        MovieDetail movieDetail = gson.fromJson(response, MovieDetail.class);
+        MovieDetailInfo detailInfo = movieDetail.getResult().get(0);
+
+        movieTitle.setText(detailInfo.getTitle());
+        switch(detailInfo.getGrade()) {
+            case 12:
+                grade.setImageResource(R.drawable.ic_12);
+                break;
+            case 15:
+                grade.setImageResource(R.drawable.ic_15);
+                break;
+            case 19:
+                grade.setImageResource(R.drawable.ic_19);
+                break;
+            default:
+                grade.setImageResource(R.drawable.ic_all);
+                break;
+        }
+        float total_rating = (detailInfo.getUser_rating()+detailInfo.getAudience_rating())/2.0f;
+        ratingBar.setRating(total_rating);
+        String ratingFormat = String.format("%.1f", total_rating);
+        rating.setText(ratingFormat);
+    }
+
+    private void setComments() {
+        String url = AppHelper.getUrl();
+        int port = AppHelper.getPort();
+        String apiUrl = "/movie/readCommentList";
+        String requestURL = "http://" + url + ":" + port + apiUrl + "?id=" + movieID + "&limit=all";
+
+        StringRequest request = new StringRequest(
+                Request.Method.GET,
+                requestURL,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        processCommentsResponse(response);
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                        Log.d("Error: ", String.valueOf(error));
+                    }
+                }
+        );
+
+        request.setShouldCache(false);
+        AppHelper.requestQueue.add(request);
+    }
+
+    private void processCommentsResponse(String response) {
+        Gson gson = new Gson();
+        CommentList commentList = gson.fromJson(response, CommentList.class);
+
+        setListView(commentList);
+    }
+
+    public void setListView(CommentList commentList) {
+        int participantsInfo = commentList.getResult().size();
+        participants.setText("("+String.valueOf(participantsInfo)+"명 참여)");
+        for(int i=0;i<participantsInfo;i++) {
+            CommentListInfo movieListDetail = commentList.getResult().get(i);
+            adapter.addItem(new evaluateItems(movieListDetail.getWriter(), movieListDetail.getContents(),
+                    movieListDetail.getRating(), movieListDetail.getTimestamp(), movieListDetail.getRecommend()));
+        }
+
+        allCommentListView.setAdapter(adapter);
     }
 
     class AllCommentAdapter extends BaseAdapter {
