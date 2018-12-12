@@ -18,7 +18,6 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
-import kr.co.supp0rtyoo.movieapplication.commentData.CommentList;
 import kr.co.supp0rtyoo.movieapplication.commentData.CommentListInfo;
 
 public class MovieDetailFragment extends Fragment {
@@ -205,12 +204,12 @@ public class MovieDetailFragment extends Fragment {
         return rootView;
     }
 
-    public void setListView(CommentList commentList) {
+    public void setListView(ArrayList<CommentListInfo> commentList) {
         //Log.d("setListView: ", commentList.getResult().get(0).toString());
-        for(int i=0;i<commentList.getResult().size();i++) {
+        for(int i=0;i<commentList.size();i++) {
             if(i==2)
                 break;
-            CommentListInfo movieListDetail = commentList.getResult().get(i);
+            CommentListInfo movieListDetail = commentList.get(i);
             adapter.addItem(new evaluateItems(movieListDetail.getWriter(), movieListDetail.getContents(),
                     movieListDetail.getRating(), movieListDetail.getTime(), movieListDetail.getRecommend()));
         }

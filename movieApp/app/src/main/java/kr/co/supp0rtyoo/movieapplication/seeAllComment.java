@@ -23,6 +23,8 @@ import java.util.ArrayList;
 
 import kr.co.supp0rtyoo.movieapplication.commentData.CommentList;
 import kr.co.supp0rtyoo.movieapplication.commentData.CommentListInfo;
+import kr.co.supp0rtyoo.movieapplication.database.CommentListDatabaseManager;
+import kr.co.supp0rtyoo.movieapplication.database.MovieDetailDatabaseManager;
 import kr.co.supp0rtyoo.movieapplication.movieData.MovieDetail;
 import kr.co.supp0rtyoo.movieapplication.movieData.MovieDetailInfo;
 
@@ -34,6 +36,7 @@ public class seeAllComment extends AppCompatActivity {
     TextView participants;
     LinearLayout writeComment;
     int movieID;
+    int netWorkStatus;
 
     ListView allCommentListView;
     AllCommentAdapter adapter;
@@ -51,7 +54,12 @@ public class seeAllComment extends AppCompatActivity {
         rating = (TextView)findViewById(R.id.allCommentsRating);
         participants = (TextView)findViewById(R.id.allCommentsParticipants);
 
-        getMovieInfoFromAPI();
+        netWorkStatus = NetworkStatus.getConnectivityStatus(getApplicationContext());
+        if(netWorkStatus == NetworkStatus.TYPE_DISCONNECTED) {
+            getMovieInfoFromDatabase(movieID);
+        } else {
+            getMovieInfoFromAPI();
+        }
 
         allCommentListView = (ListView)findViewById(R.id.seeAllCommentsListview);
         adapter = new AllCommentAdapter();
@@ -69,6 +77,31 @@ public class seeAllComment extends AppCompatActivity {
                 finish();
             }
         });
+    }
+
+    public void getMovieInfoFromDatabase(int id) {
+        Bundle bundle = MovieDetailDatabaseManager.getDataFromDatabase(id);
+
+        movieTitle.setText(bundle.getString("title"));
+        switch(bundle.getInt("grade")) {
+            case 12:
+                grade.setImageResource(R.drawable.ic_12);
+                break;
+            case 15:
+                grade.setImageResource(R.drawable.ic_15);
+                break;
+            case 19:
+                grade.setImageResource(R.drawable.ic_19);
+                break;
+            default:
+                grade.setImageResource(R.drawable.ic_all);
+                break;
+        }
+
+        float total_rating = (bundle.getFloat("user_rating")+bundle.getFloat("audience_rating"))/2.0f;
+        ratingBar.setRating(total_rating);
+        String ratingFormat = String.format("%.1f", total_rating);
+        rating.setText(ratingFormat);
     }
 
     public void getMovieInfoFromAPI() {
@@ -127,45 +160,53 @@ public class seeAllComment extends AppCompatActivity {
     }
 
     private void setComments() {
-        String url = AppHelper.getUrl();
-        int port = AppHelper.getPort();
-        String apiUrl = "/movie/readCommentList";
-        String requestURL = "http://" + url + ":" + port + apiUrl + "?id=" + movieID + "&limit=all";
+        netWorkStatus = NetworkStatus.getConnectivityStatus(getApplicationContext());
+        if(netWorkStatus == NetworkStatus.TYPE_DISCONNECTED) {
+            setListView(CommentListDatabaseManager.getDataFromDatabase(movieID));
+        } else {
+            String url = AppHelper.getUrl();
+            int port = AppHelper.getPort();
+            String apiUrl = "/movie/readCommentList";
+            String requestURL = "http://" + url + ":" + port + apiUrl + "?id=" + movieID + "&limit=all";
 
-        StringRequest request = new StringRequest(
-                Request.Method.GET,
-                requestURL,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        processCommentsResponse(response);
+            StringRequest request = new StringRequest(
+                    Request.Method.GET,
+                    requestURL,
+                    new Response.Listener<String>() {
+                        @Override
+                        public void onResponse(String response) {
+                            processCommentsResponse(response);
+                        }
+                    },
+                    new Response.ErrorListener() {
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+                            error.printStackTrace();
+                            Log.d("Error: ", String.valueOf(error));
+                        }
                     }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        error.printStackTrace();
-                        Log.d("Error: ", String.valueOf(error));
-                    }
-                }
-        );
+            );
 
-        request.setShouldCache(false);
-        AppHelper.requestQueue.add(request);
+            request.setShouldCache(false);
+            AppHelper.requestQueue.add(request);
+        }
+
     }
 
     private void processCommentsResponse(String response) {
         Gson gson = new Gson();
         CommentList commentList = gson.fromJson(response, CommentList.class);
 
-        setListView(commentList);
+        CommentListDatabaseManager.insertData(commentList);
+        setListView(commentList.getResult());
     }
 
-    public void setListView(CommentList commentList) {
-        int participantsInfo = commentList.getResult().size();
+    public void setListView(ArrayList<CommentListInfo> commentList) {
+        int participantsInfo = commentList.size();
         participants.setText("("+String.valueOf(participantsInfo)+"명 참여)");
+
         for(int i=0;i<participantsInfo;i++) {
-            CommentListInfo movieListDetail = commentList.getResult().get(i);
+            CommentListInfo movieListDetail = commentList.get(i);
             adapter.addItem(new evaluateItems(movieListDetail.getWriter(), movieListDetail.getContents(),
                     movieListDetail.getRating(), movieListDetail.getTimestamp(), movieListDetail.getRecommend()));
         }

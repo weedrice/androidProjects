@@ -1,9 +1,9 @@
 package kr.co.supp0rtyoo.movieapplication.commentData;
 
 public class CommentListInfo {
-    int total;
+    int id;
     String writer;
-    String review_id;
+    String movieId;
     String writer_image;
     String time;
     String timestamp;
@@ -11,12 +11,48 @@ public class CommentListInfo {
     String contents;
     int recommend;
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setWriter(String writer) {
+        this.writer = writer;
+    }
+
+    public void setMovieId(String movieId) {
+        this.movieId = movieId;
+    }
+
+    public void setWriter_image(String writer_image) {
+        this.writer_image = writer_image;
+    }
+
+    public void setTime(String time) {
+        this.time = time;
+    }
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public void setRating(float rating) {
+        this.rating = rating;
+    }
+
+    public void setContents(String contents) {
+        this.contents = contents;
+    }
+
+    public void setRecommend(int recommend) {
+        this.recommend = recommend;
+    }
+
     @Override
     public String toString() {
         return "CommentListInfo{" +
-                "total=" + total +
+                "id=" + id +
                 ", writer='" + writer + '\'' +
-                ", review_id='" + review_id + '\'' +
+                ", movieId='" + movieId + '\'' +
                 ", writer_image='" + writer_image + '\'' +
                 ", time='" + time + '\'' +
                 ", timestamp='" + timestamp + '\'' +
@@ -26,16 +62,16 @@ public class CommentListInfo {
                 '}';
     }
 
-    public int getTotal() {
-        return total;
+    public int getId() {
+        return id;
     }
 
     public String getWriter() {
         return writer;
     }
 
-    public String getReview_id() {
-        return review_id;
+    public String getMovieId() {
+        return movieId;
     }
 
     public String getWriter_image() {

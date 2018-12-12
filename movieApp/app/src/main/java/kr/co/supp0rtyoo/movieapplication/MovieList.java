@@ -28,6 +28,9 @@ import com.google.gson.Gson;
 import java.util.ArrayList;
 
 import kr.co.supp0rtyoo.movieapplication.commentData.CommentList;
+import kr.co.supp0rtyoo.movieapplication.database.CommentListDatabaseManager;
+import kr.co.supp0rtyoo.movieapplication.database.MovieDetailDatabaseManager;
+import kr.co.supp0rtyoo.movieapplication.database.MovieListDatabaseManager;
 import kr.co.supp0rtyoo.movieapplication.movieData.MovieDetail;
 import kr.co.supp0rtyoo.movieapplication.movieData.MovieDetailInfo;
 import kr.co.supp0rtyoo.movieapplication.movieData.MovieListDetail;
@@ -38,6 +41,7 @@ public class MovieList extends AppCompatActivity
     ViewPager pager;
     MovieDetailFragment detailFragment;
 
+    int networkStatus;
     MovieListPagerAdapter adapter;
 
     @Override
@@ -45,13 +49,29 @@ public class MovieList extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_movie_list);
 
+        if(MovieListDatabaseManager.movieListDatabase == null)
+            MovieListDatabaseManager.createDatabase(getApplicationContext(), "movieListDatabase");
+        if(MovieDetailDatabaseManager.movieDetailDatabase == null)
+            MovieDetailDatabaseManager.createDatabase(getApplicationContext(), "movieDetailDatabase");
+        if(CommentListDatabaseManager.commentListDatabase == null)
+            CommentListDatabaseManager.createDatabase(getApplicationContext(), "commentListDatabase");
+
+        networkStatus = NetworkStatus.getConnectivityStatus(getApplicationContext());
+
+
         if(AppHelper.requestQueue == null) {
             AppHelper.requestQueue = Volley.newRequestQueue(getApplicationContext());
         }
 
         pager = (ViewPager)findViewById(R.id.pager);
         adapter = new MovieListPagerAdapter(getSupportFragmentManager());
-        loadMovieListDataFromAPI();
+
+        networkStatus = NetworkStatus.getConnectivityStatus(getApplicationContext());
+        if(networkStatus == NetworkStatus.TYPE_DISCONNECTED) {
+            loadMovieListDataFromDB();
+        } else {
+            loadMovieListDataFromAPI();
+        }
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -102,6 +122,32 @@ public class MovieList extends AppCompatActivity
         setPager(adapter, movieList);
     }
 
+    private void loadMovieListDataFromDB() {
+        ArrayList<MovieListFragment> fragments = new ArrayList<MovieListFragment>();
+        ArrayList<MovieListDetail> movieListDetails = MovieListDatabaseManager.getDataFromDatabase();
+        pager.setOffscreenPageLimit(movieListDetails.size());
+
+        for(int i=0;i<movieListDetails.size();i++) {
+            MovieListDetail movieListDetail = movieListDetails.get(i);
+            MovieListFragment fragment = new MovieListFragment();
+            Bundle bundle = new Bundle(5);
+            bundle.putInt("id", movieListDetail.getId());
+            bundle.putString("title", movieListDetail.getTitle());
+            bundle.putInt("grade", movieListDetail.getGrade());
+            bundle.putString("image", movieListDetail.getImage());
+            bundle.putFloat("reservation", movieListDetail.getReservation_rate());
+
+            fragment.setArguments(bundle);
+            fragments.add(fragment);
+        }
+
+        for(int i=0;i<fragments.size();i++) {
+            adapter.addItem(fragments.get(i));
+        }
+
+        pager.setAdapter(adapter);
+    }
+
     private void setPager(MovieListPagerAdapter adapter, MovieListInfo movieListObj) {
         ArrayList<MovieListFragment> fragments = new ArrayList<MovieListFragment>();
         pager.setOffscreenPageLimit(movieListObj.getResult().size());
@@ -115,6 +161,12 @@ public class MovieList extends AppCompatActivity
             bundle.putInt("grade", movieListDetail.getGrade());
             bundle.putString("image", movieListDetail.getImage());
             bundle.putFloat("reservation", movieListDetail.getReservation_rate());
+
+            Log.d("setPager: ", "before insert");
+
+            MovieListDatabaseManager.insertData(movieListDetail.getId(), movieListDetail.getTitle(), movieListDetail.getTitle_eng(), movieListDetail.getDate(),
+                    movieListDetail.getUser_rating(), movieListDetail.getAudience_rating(), movieListDetail.getReviewer_rating(), movieListDetail.getReservation_rate(),
+                    movieListDetail.getReservation_grade(), movieListDetail.getGrade(), movieListDetail.getThumb(), movieListDetail.getImage());
             fragment.setArguments(bundle);
             fragments.add(fragment);
         }
@@ -186,7 +238,17 @@ public class MovieList extends AppCompatActivity
             getSupportFragmentManager().beginTransaction().show(detailFragment).commit();
         }
 
-        getMovieDetailFromAPI(id);
+        if(networkStatus == NetworkStatus.TYPE_DISCONNECTED) {
+            getMovieDetailFromDB(id);
+        } else {
+            getMovieDetailFromAPI(id);
+        }
+    }
+
+    public void getMovieDetailFromDB(int id) {
+        Bundle bundle = MovieDetailDatabaseManager.getDataFromDatabase(id);
+        detailFragment.setArguments(bundle);
+        getSupportFragmentManager().beginTransaction().replace(R.id.container, detailFragment).commit();
     }
 
     public void getMovieDetailFromAPI(int id) {
@@ -222,6 +284,7 @@ public class MovieList extends AppCompatActivity
         Gson gson = new Gson();
         MovieDetail movieDetail = gson.fromJson(response, MovieDetail.class);
 
+        MovieDetailDatabaseManager.insertData(movieDetail);
         setDetailBundle(movieDetail);
     }
 
@@ -294,39 +357,49 @@ public class MovieList extends AppCompatActivity
     }
 
     public void getCommentsFromAPI(int id) {
-        String url = AppHelper.getUrl();
-        int port = AppHelper.getPort();
-        String apiUrl = "/movie/readCommentList";
-        int movieID = id;
-        int limit = 2;
-        String requestURL = "http://" + url + ":" + port + apiUrl + "?id=" + movieID + "&limit=" + limit;
+        networkStatus = NetworkStatus.getConnectivityStatus(getApplicationContext());
+        if(networkStatus == NetworkStatus.TYPE_DISCONNECTED) {
+            getCommentsFromDatabase(id);
+        } else {
+            String url = AppHelper.getUrl();
+            int port = AppHelper.getPort();
+            String apiUrl = "/movie/readCommentList";
+            int movieID = id;
+            int limit = 2;
+            String requestURL = "http://" + url + ":" + port + apiUrl + "?id=" + movieID + "&limit=" + limit;
 
-        StringRequest request = new StringRequest(
-                Request.Method.GET,
-                requestURL,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        processCommentsResponse(response);
+            StringRequest request = new StringRequest(
+                    Request.Method.GET,
+                    requestURL,
+                    new Response.Listener<String>() {
+                        @Override
+                        public void onResponse(String response) {
+                            processCommentsResponse(response);
+                        }
+                    },
+                    new Response.ErrorListener() {
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+                            error.printStackTrace();
+                            Log.d("Error: ", String.valueOf(error));
+                        }
                     }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        error.printStackTrace();
-                        Log.d("Error: ", String.valueOf(error));
-                    }
-                }
-        );
+            );
 
-        request.setShouldCache(false);
-        AppHelper.requestQueue.add(request);
+            request.setShouldCache(false);
+            AppHelper.requestQueue.add(request);
+        }
+    }
+
+    public void getCommentsFromDatabase(int id) {
+        detailFragment.setListView(CommentListDatabaseManager.getDataFromDatabase(id));
     }
 
     private void processCommentsResponse(String response) {
         Gson gson = new Gson();
         CommentList commentList = gson.fromJson(response, CommentList.class);
 
-        detailFragment.setListView(commentList);
+        CommentListDatabaseManager.insertData(commentList);
+        detailFragment.setListView(commentList.getResult());
     }
 }
