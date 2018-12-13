@@ -1,6 +1,7 @@
 package kr.co.supp0rtyoo.movieapplication;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
@@ -309,8 +310,22 @@ public class MovieList extends AppCompatActivity
         bundle.putInt("like", movieDetailInfo.getLike());
         bundle.putInt("dislike", movieDetailInfo.getDislike());
 
+        bundle.putString("photos", movieDetailInfo.getPhotos());
+        bundle.putString("videos", movieDetailInfo.getVideos());
+
         detailFragment.setArguments(bundle);
         getSupportFragmentManager().beginTransaction().replace(R.id.container, detailFragment).commit();
+    }
+
+    public void showMovie(String url) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        startActivity(intent);
+    }
+
+    public void showPhoto(String url) {
+        Intent intent = new Intent(getApplicationContext(), ShowDetailPhoto.class);
+        intent.putExtra("url", url);
+        startActivity(intent);
     }
 
     public void showWriteComment(int movieID) {

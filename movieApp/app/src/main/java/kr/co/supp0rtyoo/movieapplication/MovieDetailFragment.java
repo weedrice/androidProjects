@@ -5,6 +5,9 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -40,6 +43,10 @@ public class MovieDetailFragment extends Fragment {
     EvaluateAdapter adapter;
     ListView evalListView;
 
+    RecyclerView recyclerView;
+    LinearLayoutManager recyclerViewManager;
+    GalleryAdapter galleryAdapter;
+
     @Override
     public void onAttach(Context context) {
         movieList = (MovieList)getActivity();
@@ -67,6 +74,8 @@ public class MovieDetailFragment extends Fragment {
         allEvaluateTxt = (LinearLayout) rootView.findViewById(R.id.seeAllEvaluate);
         movieTitle = (TextView)rootView.findViewById(R.id.movieTitle);
         poster = (ImageView)rootView.findViewById(R.id.moviePoster);
+        recyclerView = (RecyclerView)rootView.findViewById(R.id.movieDetailRecyclerView);
+
         ImageView grade = (ImageView)rootView.findViewById(R.id.ageLimit);
         TextView opening = (TextView)rootView.findViewById(R.id.openingDay);
         TextView genre = (TextView)rootView.findViewById(R.id.genre);
@@ -119,6 +128,43 @@ public class MovieDetailFragment extends Fragment {
         synopsis.setText(getArguments().getString("synopsis"));
         director.setText(getArguments().getString("director"));
         actor.setText(getArguments().getString("actor"));
+
+        //Recycler View 시작
+        recyclerViewManager = new LinearLayoutManager(movieList, LinearLayoutManager.HORIZONTAL, false);
+        recyclerView.setLayoutManager(recyclerViewManager);
+        galleryAdapter = new GalleryAdapter(movieList.getApplicationContext());
+
+        ArrayList<GalleryItem> galleryItems = new ArrayList<GalleryItem>();
+        String photo = getArguments().getString("photos");
+        String video = getArguments().getString("videos");
+        String[] photos = photo.split(",");
+        String[] videos = video.split(",");
+        for(int i=0;i<photos.length;i++) {
+            GalleryItem item = new GalleryItem(photos[i], 1);
+            galleryItems.add(item);
+        }
+        for(int i=0;i<videos.length;i++) {
+            Log.d("Moviedetail : ", videos[i] + ", ");
+            GalleryItem item = new GalleryItem(videos[i], 0);
+            galleryItems.add(item);
+        }
+        galleryAdapter.addItems(galleryItems);
+
+        recyclerView.setAdapter(galleryAdapter);
+
+        galleryAdapter.setOnItemClickListener(new GalleryAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(GalleryAdapter.GalleryViewHolder holder, View view, int position) {
+                GalleryItem galleryItem = galleryAdapter.getItem(position);
+                String url = galleryItem.getUrl();
+                if(galleryItem.getType() == 0) {
+                    movieList.showMovie(url);
+                } else {
+                    movieList.showPhoto(url);
+                }
+            }
+        });
+        //Recycler View 끝
 
 
         thumbsUpBtn.setOnClickListener(new View.OnClickListener() {
@@ -217,7 +263,7 @@ public class MovieDetailFragment extends Fragment {
         evalListView.setAdapter(adapter);
     }
 
-    class EvaluateAdapter extends BaseAdapter {
+    public class EvaluateAdapter extends BaseAdapter {
         ArrayList<evaluateItems> items = new ArrayList<evaluateItems>();
 
         @Override
@@ -258,4 +304,5 @@ public class MovieDetailFragment extends Fragment {
             items.add(item);
         }
     }
+
 }

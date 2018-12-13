@@ -50,6 +50,7 @@ public class ImageLoadTask extends AsyncTask<Void, Void, Bitmap> {
             }
 
             URL url = new URL(urlStr);
+            //BitmapFactory.Options options = new BitmapFactory.Options();
             bitmap = BitmapFactory.decodeStream(url.openConnection().getInputStream());
 
             bitmapHash.put(urlStr, bitmap);
